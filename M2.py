@@ -2,45 +2,21 @@ from M1 import Posting
 import json
 from porter2stemmer import Porter2Stemmer
 from urllib.parse import urldefrag
-from math import log
+import time
 
 
 stemmer = Porter2Stemmer()
 score = {}
+DOC_ID_INDEX = 0
+FIELD_INDEX = 1
+TF_IDF_INDEX = 2
+
 
 field_weight = {
     "title" : 2.0,
     "important" : 1.5,
     "body" : 1.0,
 }
-"""
-class Posting:
-    def __init__(self, doc_id, field, frequency = 0) -> None:
-        self.doc_id = doc_id
-        self.field = field
-        self.frequency = frequency
-        self.tf_idf = 0.0
-
-    def increment_frequency(self):
-        self.frequency += 1
-    
-    def to_dict(self):
-        return {
-            "doc_id" : self.doc_id,
-            "frequency" : self.frequency,
-            "field" : self.field,
-            "tf_idf" : self.tf_idf
-        }
-    
-    def calculate_tf_idf(self, total_files, length):
-        self.tf_idf = (1 + log(self.frequency)) * log(total_files / length)
-    
-    @classmethod
-    def from_dict(cls, data):
-        obj = cls(data['doc_id'], data['field'], data['frequency'])
-        obj.tf_idf = data['tf_idf']
-        return obj
-"""
 
 def load_posting(index_table, offset, word):
     index_table.seek(offset)
@@ -48,24 +24,27 @@ def load_posting(index_table, offset, word):
     #print(index)
     temp = json.loads(index)
     postings = temp[word]
-    return [Posting.from_dict(posting) for posting in postings]
+    return postings
         
 
 def term_at_a_time(index_table: dict, word: str, offset: int):
     postings = load_posting(index_table, offset, word)
     for posting in postings:
-        if posting.doc_id in score:
-            score[posting.doc_id] += posting.tf_idf * field_weight[posting.field]
+        if posting[DOC_ID_INDEX] in score:
+            score[posting[DOC_ID_INDEX]]['score'] += posting[TF_IDF_INDEX] * field_weight[posting[FIELD_INDEX]]
+            score[posting[DOC_ID_INDEX]]['terms'].add(word)
         else:
-            score[posting.doc_id] = posting.tf_idf * field_weight[posting.field]
+            score[posting[DOC_ID_INDEX]] = {'score': posting[TF_IDF_INDEX] * field_weight[posting[FIELD_INDEX]], 'terms': {word}}
 
 
-def return_url():
-    sorted_score = sorted(score.items(), key = lambda x: -x[1])
+def return_url(stemmed_tokens: list):
+    query_terms = set(stemmed_tokens)
+    filtered_score = {doc_id: info['score'] for doc_id, info in score.items() if query_terms.issubset(info['terms'])}
+    sorted_score = sorted(filtered_score.items(), key = lambda x: -x[1])
     returned_list = []
     count = 0
     for x in sorted_score:
-        if count == 5:
+        if count == 10:
             return
         file_name = file_table[str(x[0])]
         f = open(file_name, "r")
@@ -87,8 +66,10 @@ if __name__ == '__main__':
     while(1):
         score = {}
         query = input("Enter Query: ")
+        start_time = time.time()
         tokens = query.split()
-        for token in tokens:
+        stemmed_tokens = [stemmer.stem(token).lower() for token in tokens]
+        for token in stemmed_tokens:
             #print(token)
             word = stemmer.stem(token).lower()
             try:
@@ -96,7 +77,10 @@ if __name__ == '__main__':
                 term_at_a_time(index_table, word, offset)
             except KeyError:
                 continue
-        return_url()
+        return_url(stemmed_tokens)
+        end_time = time.time()
+        elpased_time = end_time - start_time
+        print("Time taken: ", elpased_time, " seconds")
 
 
 

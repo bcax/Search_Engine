@@ -5,8 +5,6 @@ import re
 from math import log
 from nltk.tokenize import word_tokenize
 from porter2stemmer import Porter2Stemmer
-from nltk.stem import PorterStemmer
-from collections import defaultdict
 from bs4 import BeautifulSoup
 nltk.download('punkt')
 
@@ -22,23 +20,15 @@ class Posting:
         self.frequency += 1
     
     def to_dict(self):
-        return {
-            "doc_id" : self.doc_id,
-            "frequency" : self.frequency,
-            "field" : self.field,
-            "tf_idf" : self.tf_idf
-        }
+        return [self.doc_id, self.field, self.tf_idf, self.frequency]
     
     def calculate_tf_idf(self, total_files, length):
-        #print(f'{self.frequency} : {type(self.frequency)}')
-        #print(f'{total_files} : {type(total_files)}')
-        #print(f'{len(index_table)} : {type(len(index_table))}')
         self.tf_idf = (1 + log(self.frequency)) * log(total_files / length)
     
     @classmethod
     def from_dict(cls, data):
-        obj = cls(data['doc_id'], data['field'], data['frequency'])
-        obj.tf_idf = data['tf_idf']
+        obj = cls(data[0], data[1], data[3])
+        obj.tf_idf = data[2]
         return obj
 
 
@@ -76,25 +66,25 @@ def eval_json_files(path):
             file_table[doc_id] = file
             build_index(file)
             doc_id += 1
-            if doc_id == 13838:
+            if doc_id == 13838: #497:
                 f_1 = open("index_table_part_1.json", "x")
                 serializable_index = {word: [posting.to_dict() for posting in postings] for word, postings in index_table.items()}
                 json.dump(serializable_index, f_1)
                 f_1.close()
                 index_table = dict()
-            elif doc_id == 27696:
+            elif doc_id == 27696: #994:
                 f_1 = open("index_table_part_2.json", "x")
                 serializable_index = {word: [posting.to_dict() for posting in postings] for word, postings in index_table.items()}
                 json.dump(serializable_index, f_1)
                 f_1.close()
                 index_table = dict()
-            elif doc_id == 45144:
+            elif doc_id == 45144: #1491: #45144:
                 f_1 = open("index_table_part_3.json", "x")
                 serializable_index = {word: [posting.to_dict() for posting in postings] for word, postings in index_table.items()}
                 json.dump(serializable_index, f_1)
                 f_1.close()
                 index_table = dict()
-            elif doc_id == 55393:
+            elif doc_id == 55393: #1987: #55393:
                 f_1 = open("index_table_part_4.json", "x")
                 serializable_index = {word: [posting.to_dict() for posting in postings] for word, postings in index_table.items()}
                 json.dump(serializable_index, f_1)
