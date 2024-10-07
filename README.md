@@ -45,3 +45,24 @@ Install dependencies by running:
 
 ```bash
 pip install -r requirements.txt
+```
+
+### Running the Indexer (M1)
+
+```bash
+python M1.py
+```
+This will generate the inverted index, which is saved in multiple parts as JSON files.
+
+### Running the Search Engine (M2)
+
+```bash
+python M2.py
+```
+
+This will start the Flask application. Open your browser and go to http://127.0.0.1:5000 to access the search interface
+
+
+
+
+
